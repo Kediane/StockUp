@@ -408,7 +408,7 @@ def news_listing(selected_symbol):
         """
         <style>
             iframe {
-                height: calc(100vh - 30rem) !important;
+                height: calc(100vh - 25rem) !important;
             }
         </style>
         """,
