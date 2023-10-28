@@ -1,5 +1,5 @@
 import sqlite3
-import tomllib
+import tomli as tomllib
 
 from streamlit import cache_resource
 
