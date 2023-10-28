@@ -1,5 +1,7 @@
 import streamlit as st
 
+st.set_page_config(layout="wide")
+
 from services.streamlit.resources import stock_repo, balance_sheet_repo, cash_flow_repo, income_statement_repo, \
     earnings_repo
 import pandas as pd
@@ -277,10 +279,6 @@ def data_analysis(balance_sheet_df, cash_flow_df, income_statements_df, earnings
 
 
 def app():
-    if 'loaded' not in st.session_state:
-        st.set_page_config(layout="wide")
-        st.session_state['loaded'] = True
-
     st.title('Welcome to StockUp')
     st.subheader('Investment ideas backed by science and not guesses!')
     symbol = symbol_search()
