@@ -1,0 +1,8 @@
+aiohttp[speedups]
+streamlit
+aiohttp-retry
+more-itertools
+pandas
+numpy
+scipy
+notebook

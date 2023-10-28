@@ -1,0 +1,8 @@
+[alphavantage]
+api_key_backup = "F3WRK53FOUKPN7XE"
+api_key = "0EX46N6BAZO8CY8V"
+[db]
+connection_uri = "data/stockup.db"
+[batch_job]
+schedule_period_hr = 24
+batch_size = 5
