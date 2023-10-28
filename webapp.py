@@ -1,32 +1,15 @@
+import random
+from datetime import datetime
+
 import streamlit as st
+from finvizfinance.quote import finvizfinance
+from streamlit.components.v1 import html
 
 st.set_page_config(layout="wide")
 
 from services.streamlit.resources import stock_repo, balance_sheet_repo, cash_flow_repo, income_statement_repo, \
     earnings_repo
 import pandas as pd
-
-
-def symbol_search():
-    with st.container():
-        col1, col2 = st.columns(2)
-
-        with col1:
-            stock = st.text_input("Enter the name of the stock/etf to analyse")
-        with col2:
-            st.markdown('''
-            <style>
-            #custom-padding {
-                margin-bottom: 28px;
-            }
-            </style>
-            <div id="custom-padding"></div>
-            ''', unsafe_allow_html=True)
-            clicked = st.button('Search')
-    if clicked:
-        return stock
-    else:
-        return None
 
 
 def fundamentals(balance_sheet_df, cash_flow_df, income_statements_df, earnings_df):
@@ -43,7 +26,7 @@ def fundamentals(balance_sheet_df, cash_flow_df, income_statements_df, earnings_
         st.write(earnings_df)
 
 
-def data_analysis(balance_sheet_df, cash_flow_df, income_statements_df, earnings_df):
+def data_analysis(balance_sheet_df, cash_flow_df, income_statements_df):
     def income():
         annual_income_statements = income_statements_df[income_statements_df['report_type'] == 'annualReports']
         quarterly_income_statements = income_statements_df[income_statements_df['report_type'] == 'quarterlyReports']
@@ -133,9 +116,10 @@ def data_analysis(balance_sheet_df, cash_flow_df, income_statements_df, earnings
         annual_balance_sheet_statements['Debt To Equity Ratio'] = annual_balance_sheet_statements['totalLiabilities'] / \
                                                                   annual_balance_sheet_statements[
                                                                       'totalShareholderEquity']
-        quarterly_balance_sheet_statements['Debt To Equity Ratio'] = quarterly_balance_sheet_statements['totalLiabilities'] / \
-                                                                  quarterly_balance_sheet_statements[
-                                                                      'totalShareholderEquity']
+        quarterly_balance_sheet_statements['Debt To Equity Ratio'] = quarterly_balance_sheet_statements[
+                                                                         'totalLiabilities'] / \
+                                                                     quarterly_balance_sheet_statements[
+                                                                         'totalShareholderEquity']
 
         with st.expander('Balance Sheet Analysis'):
             st.subheader('Total Assets')
@@ -278,51 +262,192 @@ def data_analysis(balance_sheet_df, cash_flow_df, income_statements_df, earnings
     cash_flow()
 
 
+def news_listing(selected_symbol):
+    stock = finvizfinance(selected_symbol.lower())
+    news_df = stock.ticker_news().sort_values(by=['Date'], ascending=False)
+    current_date = datetime.now()
+    colors = [
+        '#FF5733',
+        '#FF9C33',
+        '#FFC133',
+        '#C1FF33',
+        '#7AFF33',
+        '#33FF9F',
+        '#33FCFF',
+        '#335EFF',
+        '#6E33FF',
+        '#D733FF',
+        '#FF33CE',
+        '#FF3352',
+    ]
+    style = """
+    <style>
+        @import url(https://fonts.googleapis.com/css?family=Raleway:400,600,700);
+        @import url(https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css);
+        figure.snip1216 {
+          font-family: 'Raleway', Arial, sans-serif;
+          color: #fff;
+          position: relative;
+          display: inline-block;
+          overflow: hidden;
+          margin: 10px;
+          min-width: 220px;
+          max-width: 350px;
+          width: 100%;
+          background-color: #262626;
+          color: #ffffff;
+          text-align: left;
+          font-size: 16px;
+          box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        figure.snip1216 * {
+          -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+          -webkit-transition: all 0.3s ease;
+          transition: all 0.3s ease;
+        }
+        figure.snip1216 .image {
+          height: 180px;
+          overflow: hidden;
+        }
+        figure.snip1216 .image div {
+          font-size: 140px;
+          text-align: center;
+        }
+        figure.snip1216 figcaption {
+          padding: 25px;
+          position: relative;
+        }
+        figure.snip1216 .date {
+          background-color: #c0392b;
+          top: 25px;
+          color: #fff;
+          left: 25px;
+          min-height: 48px;
+          min-width: 48px;
+          position: absolute;
+          text-align: center;
+          font-size: 20px;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        figure.snip1216 .date span {
+          display: block;
+          line-height: 24px;
+        }
+        figure.snip1216 .date .month {
+          font-size: 14px;
+          background-color: rgba(0, 0, 0, 0.1);
+        }
+        figure.snip1216 h4,
+        figure.snip1216 p {
+          margin: 0;
+          padding: 0;
+        }
+        figure.snip1216 h4 {
+          min-height: 50px;
+          margin-bottom: 10px;
+          margin-left: 60px;
+          display: inline-block;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+        figure.snip1216 p {
+          font-size: 0.8em;
+          margin-bottom: 20px;
+          line-height: 1.6em;
+        }
+        figure.snip1216 footer {
+          padding: 0 25px;
+          background-color: rgba(0, 0, 0, 0.5);
+          color: #e6e6e6;
+          font-size: 0.8em;
+          line-height: 30px;
+          text-align: right;
+        }
+        figure.snip1216 a {
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          position: absolute;
+          z-index: 1;
+        }
+        figure.snip1216:hover img,
+        figure.snip1216.hover img {
+          -webkit-transform: scale(1.1);
+          transform: scale(1.1);
+        }
+    </style>
+    """
+    content = f"""
+    {style}
+    <div style="display: flex; justify-content: space-between;height: 100%;flex-wrap:wrap;">
+        {''.join([
+        f'''
+        <figure class="snip1216" style="cursor: pointer;" onclick="window.open('{row['Link']}', '_blank')">
+          <div class="image" style="background-color: {random.choice(colors)}">
+            <div>{row['Title'][0].upper()}</div>
+          </div>
+          <figcaption>
+            <div class="date">
+                <span class="day">{row['Date'].day}</span>
+                <span class="month">{row['Date'].strftime('%b')}</span>
+            </div>
+            <h4>{' '.join(row['Title'].split(' ')[:3])}...</h4>
+            <p>{row['Title']}</p>
+          </figcaption>
+        </figure>
+        '''
+        for index, row in news_df.iterrows()
+        if current_date.year == row['Date'].year
+    ])}
+    </dv>
+    """
+    st.markdown(
+        """
+        <style>
+            iframe {
+                height: calc(100vh - 30rem) !important;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    html(content, scrolling=True)
+
+
 def app():
     st.title('Welcome to StockUp')
     st.subheader('Investment ideas backed by science and not guesses!')
-    symbol = symbol_search()
+    results = stock_repo.find_all_sync(limit=1_000_000)
+    selected_company = st.selectbox('Please select one of the matching stock/etf to analyse',
+                                    [item['name'] for item in results])
+    selected_symbol = next(map(lambda x: x['symbol'], filter(lambda x: x['name'] == selected_company, results)))
 
-    if not symbol and 'symbol' in st.session_state:
-        symbol = st.session_state['symbol']
-    elif symbol:
-        st.session_state['symbol'] = symbol
+    if selected_company:
+        balance_sheets = balance_sheet_repo.find_all_sync(selected_symbol)
+        balance_sheet_df = pd.DataFrame(balance_sheets)
 
-    if symbol:
-        results = stock_repo.find_all_sync(symbol)
-        selected_company = None
-        selected_symbol = None
+        cash_flow = cash_flow_repo.find_all_sync(selected_symbol)
+        cash_flow_df = pd.DataFrame(cash_flow)
 
-        if len(results) > 1:
-            selected_company = st.selectbox('Please select one of the matching stock/etf to analyse',
-                                            [item['name'] for item in results])
-            selected_symbol = next(map(lambda x: x['symbol'], filter(lambda x: x['name'] == selected_company, results)))
-        elif len(results) == 1:
-            selected_company = results[0]['name']
-            selected_symbol = next(map(lambda x: x['symbol'], filter(lambda x: x['name'] == selected_company, results)))
-        else:
-            st.write(f'Could not find any stock/etf matching search {symbol}')
+        income_statements = income_statement_repo.find_all_sync(selected_symbol)
+        income_statements_df = pd.DataFrame(income_statements)
 
-        if selected_company:
-            balance_sheets = balance_sheet_repo.find_all_sync(selected_symbol)
-            balance_sheet_df = pd.DataFrame(balance_sheets)
+        earnings = earnings_repo.find_all_sync(selected_symbol)
+        earnings_df = pd.DataFrame(earnings)
 
-            cash_flow = cash_flow_repo.find_all_sync(selected_symbol)
-            cash_flow_df = pd.DataFrame(cash_flow)
+        expert_tab, analysis_tab, fundamentals_tab, news_tab = st.tabs(
+            ["💰 Expert Advisor", "📈 Data Analysis", "🗃 Fundamentals", "News"])
 
-            income_statements = income_statement_repo.find_all_sync(selected_symbol)
-            income_statements_df = pd.DataFrame(income_statements)
+        with analysis_tab:
+            data_analysis(balance_sheet_df, cash_flow_df, income_statements_df)
 
-            earnings = earnings_repo.find_all_sync(selected_symbol)
-            earnings_df = pd.DataFrame(earnings)
-
-            expert_tab, analysis_tab, fundamentals_tab = st.tabs(["💰 Expert Advisor", "📈 Data Analysis", "🗃 Fundamentals"])
-
-            with analysis_tab:
-                data_analysis(balance_sheet_df, cash_flow_df, income_statements_df, earnings_df)
-
-            with fundamentals_tab:
-                fundamentals(balance_sheet_df, cash_flow_df, income_statements_df, earnings_df)
+        with fundamentals_tab:
+            fundamentals(balance_sheet_df, cash_flow_df, income_statements_df, earnings_df)
+        with news_tab:
+            news_listing(selected_symbol)
 
 
 app()

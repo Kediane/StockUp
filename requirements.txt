@@ -7,3 +7,4 @@ numpy
 scipy
 notebook
 tomli
+finvizfinance
