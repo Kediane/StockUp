@@ -4,12 +4,12 @@ from datetime import datetime
 import streamlit as st
 from finvizfinance.quote import finvizfinance
 from streamlit.components.v1 import html
+import pandas as pd
 
 st.set_page_config(layout="wide")
 
 from services.streamlit.resources import stock_repo, balance_sheet_repo, cash_flow_repo, income_statement_repo, \
     earnings_repo
-import pandas as pd
 
 
 def fundamentals(balance_sheet_df, cash_flow_df, income_statements_df, earnings_df):
@@ -420,22 +420,22 @@ def news_listing(selected_symbol):
 def app():
     st.title('Welcome to StockUp')
     st.subheader('Investment ideas backed by science and not guesses!')
-    results = stock_repo.find_all_sync(limit=1_000_000)
+    results = stock_repo.find_all(limit=1_000_000)
     selected_company = st.selectbox('Please select one of the matching stock/etf to analyse',
                                     [item['name'] for item in results])
     selected_symbol = next(map(lambda x: x['symbol'], filter(lambda x: x['name'] == selected_company, results)))
 
     if selected_company:
-        balance_sheets = balance_sheet_repo.find_all_sync(selected_symbol)
+        balance_sheets = balance_sheet_repo.find_all(selected_symbol)
         balance_sheet_df = pd.DataFrame(balance_sheets)
 
-        cash_flow = cash_flow_repo.find_all_sync(selected_symbol)
+        cash_flow = cash_flow_repo.find_all(selected_symbol)
         cash_flow_df = pd.DataFrame(cash_flow)
 
-        income_statements = income_statement_repo.find_all_sync(selected_symbol)
+        income_statements = income_statement_repo.find_all(selected_symbol)
         income_statements_df = pd.DataFrame(income_statements)
 
-        earnings = earnings_repo.find_all_sync(selected_symbol)
+        earnings = earnings_repo.find_all(selected_symbol)
         earnings_df = pd.DataFrame(earnings)
 
         expert_tab, analysis_tab, fundamentals_tab, news_tab = st.tabs(

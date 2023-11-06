@@ -1,9 +1,6 @@
-import asyncio
 import logging
 import sqlite3
 import tomllib
-
-from aiohttp import ClientSession
 
 from models.queries.Income_statements import CREATE_INCOME_STATEMENT_TABLE
 from models.queries.balance_sheets import CREATE_BALANCE_SHEET_TABLE
@@ -19,16 +16,15 @@ from services.alpha_vantage import AlphaVantageService
 from services.batch import BatchService
 
 
-async def main(config: dict):
+def main(config: dict):
     conn = sqlite3.connect(config['db']['connection_uri'], check_same_thread=False)
     balance_sheet_repo = BalanceSheetRepository(conn)
     cash_flow_repo = CashFlowRepository(conn)
     earnings_repo = EarningsRepository(conn)
     stock_repo = StockRepository(conn)
     income_statement_repo = IncomeStatementRepository(conn)
-    client_session = ClientSession()
     batch_service = BatchService(
-        AlphaVantageService(config['alphavantage']['api_key'], client_session),
+        AlphaVantageService(config['alphavantage']['api_key']),
         income_statement_repo,
         balance_sheet_repo,
         cash_flow_repo,
@@ -45,10 +41,9 @@ async def main(config: dict):
     conn.execute(CREATE_INCOME_STATEMENT_TABLE)
 
     try:
-        await batch_service.run()
+        batch_service.run()
     finally:
-        await client_session.close()
-        await asyncio.to_thread(conn.close)
+        conn.close()
 
 
 if __name__ == "__main__":
@@ -56,4 +51,4 @@ if __name__ == "__main__":
         conf = tomllib.load(f)
 
     logging.basicConfig(format='%(asctime)s::%(name)s::%(levelname)s:: %(message)s', level=logging.INFO)
-    asyncio.run(main(conf))
+    main(conf)

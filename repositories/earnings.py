@@ -1,4 +1,3 @@
-import asyncio
 from sqlite3 import Connection
 
 from models.queries.earnings_statements import INSERT_EARNINGS_STATEMENTS_TABLE, SELECT_EARNINGS_STATEMENT, \
@@ -9,10 +8,7 @@ class EarningsRepository:
     def __init__(self, conn: Connection):
         self.conn = conn
 
-    async def find_all(self, symbol='', limit=100, offset=0):
-        return await asyncio.to_thread(lambda: self.find_all_sync(symbol, limit, offset))
-
-    def find_all_sync(self, symbol='', limit=100, offset=0):
+    def find_all(self, symbol='', limit=100, offset=0):
         cursor = self.conn.cursor()
         if symbol:
             res = cursor.execute(SELECT__EARNINGS_STATEMENT_BY_SYMBOL, (symbol, limit, offset))
@@ -32,10 +28,7 @@ class EarningsRepository:
             for record in res.fetchall()
         ]
 
-    async def bulk_insert(self, statements: dict):
-        await asyncio.to_thread(lambda: self._bulk_insert(statements))
-
-    def _bulk_insert(self, statement: dict):
+    def bulk_insert(self, statement: dict):
         cursor = self.conn.cursor()
 
         cursor.executemany(

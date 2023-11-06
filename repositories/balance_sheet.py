@@ -9,10 +9,7 @@ class BalanceSheetRepository:
     def __init__(self, conn: Connection):
         self.conn = conn
 
-    async def find_all(self, symbol='', limit=100, offset=0):
-        return await asyncio.to_thread(lambda: self.find_all_sync(symbol, limit, offset))
-
-    def find_all_sync(self, symbol='', limit=100, offset=0):
+    def find_all(self, symbol='', limit=100, offset=0):
         cursor = self.conn.cursor()
         if symbol:
             res = cursor.execute(SELECT_BALANCE_SHEET_BY_SYMBOL, (symbol, limit, offset))
@@ -64,10 +61,7 @@ class BalanceSheetRepository:
             for record in res.fetchall()
         ]
 
-    async def bulk_insert(self, statements: dict):
-        await asyncio.to_thread(lambda: self._bulk_insert(statements))
-
-    def _bulk_insert(self, statement: dict):
+    def bulk_insert(self, statement: dict):
         cursor = self.conn.cursor()
 
         cursor.executemany(
