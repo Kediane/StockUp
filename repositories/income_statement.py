@@ -1,4 +1,4 @@
-import asyncio
+from datetime import datetime
 from sqlite3 import Connection
 
 from models.queries.Income_statements import INSERT_INCOME_STATEMENTS_TABLE, SELECT_INCOME_STATEMENT, \
@@ -9,13 +9,7 @@ class IncomeStatementRepository:
     def __init__(self, conn: Connection):
         self.conn = conn
 
-    async def bulk_insert(self, statements: dict):
-        await asyncio.to_thread(lambda: self._bulk_insert(statements))
-
-    async def find_all(self, symbol='', limit=100, offset=0):
-        return await asyncio.to_thread(lambda: self.find_all_sync(symbol, limit, offset))
-
-    def find_all_sync(self, symbol='', limit=100, offset=0):
+    def find_all(self, symbol='', limit=100, offset=0):
         cursor = self.conn.cursor()
         if symbol:
             res = cursor.execute(SELECT__INCOME_STATEMENT_BY_SYMBOL, (symbol, limit, offset))
@@ -24,7 +18,7 @@ class IncomeStatementRepository:
         return [
             {
                 'symbol': record[0],
-                'fiscalDateEnding': record[1],
+                'fiscalDateEnding': datetime.strptime(record[1], '%Y-%m-%d'),
                 'reportedCurrency': record[2],
                 'grossProfit': record[3],
                 'totalRevenue': record[4],
@@ -55,7 +49,7 @@ class IncomeStatementRepository:
             for record in res.fetchall()
         ]
 
-    def _bulk_insert(self, statement: dict):
+    def bulk_insert(self, statement: dict):
         cursor = self.conn.cursor()
 
         data = [

@@ -1,6 +1,7 @@
+import pickle
 import sqlite3
-import tomli as tomllib
 
+import tomli as tomllib
 from streamlit import cache_resource
 
 from repositories.balance_sheet import BalanceSheetRepository
@@ -24,4 +25,12 @@ def load_db_resources():
     return balance_sheet_repo, cash_flow_repo, earnings_repo, stock_repo, income_statement_repo, close_db
 
 
+@cache_resource
+def load_ml_model():
+    with open('data/dtree_model.ml', 'rb') as file:
+        with open('data/feature_symbols.binary', 'rb') as file2:
+            return pickle.load(file), pickle.load(file2)
+
+
 balance_sheet_repo, cash_flow_repo, earnings_repo, stock_repo, income_statement_repo, close_db = load_db_resources()
+stock_prediction_model, feature_symbols = load_ml_model()

@@ -1,6 +1,4 @@
-aiohttp[speedups]
 streamlit
-aiohttp-retry
 more-itertools
 pandas
 numpy
@@ -8,3 +6,7 @@ scipy
 notebook
 tomli
 finvizfinance
+matplotlib
+seaborn
+yfinance
+scikit-learn

@@ -4,12 +4,14 @@ from datetime import datetime
 import streamlit as st
 from finvizfinance.quote import finvizfinance
 from streamlit.components.v1 import html
+import pandas as pd
 
+# Need to set the page to take up fullscreen before importing using streamlit for anything
 st.set_page_config(layout="wide")
 
+# streamlit used to cache ml models and database conn
 from services.streamlit.resources import stock_repo, balance_sheet_repo, cash_flow_repo, income_statement_repo, \
-    earnings_repo
-import pandas as pd
+    earnings_repo, stock_prediction_model, feature_symbols
 
 
 def fundamentals(balance_sheet_df, cash_flow_df, income_statements_df, earnings_df):
@@ -417,35 +419,101 @@ def news_listing(selected_symbol):
     html(content, scrolling=True)
 
 
+def robo_advisor(owns_stock, selected_symbol, balance_sheet_df, cash_flow_df, income_statements_df, earnings_df):
+    quarterly_income_statements = income_statements_df[income_statements_df['report_type'] == 'quarterlyReports']
+    quarterly_earnings_statements = earnings_df[earnings_df['period'] == 'quarterlyEarnings']
+    quarterly_cash_flow_statements = cash_flow_df[cash_flow_df['period'] == 'quarterlyReports']
+    quarterly_balance_sheet_statements = balance_sheet_df[balance_sheet_df['period'] == 'quarterlyReports']
+
+    income_balance_df = pd.merge(
+        quarterly_income_statements,
+        quarterly_balance_sheet_statements,
+        how='outer',
+        left_index=True,
+        right_index=True,
+        suffixes=('', '_y')
+    )
+    income_balance_df.drop(income_balance_df.filter(regex='_y$').columns, axis=1, inplace=True)
+
+    income_balance_cash_df = pd.merge(
+        income_balance_df,
+        quarterly_cash_flow_statements,
+        how='outer',
+        left_index=True,
+        right_index=True,
+        suffixes=('', '_y')
+    )
+    income_balance_cash_df.drop(income_balance_cash_df.filter(regex='_y$').columns, axis=1, inplace=True)
+
+    earnings_df['period'].replace('quarterlyEarnings', 'quarterlyReports', inplace=True)
+    earnings_df['period'].replace('annualEarnings', 'annualReports', inplace=True)
+
+    fundamentals_df = pd.merge(income_balance_cash_df, quarterly_earnings_statements, how='outer', left_index=True,
+                               right_index=True, suffixes=('', '_y')).dropna()
+    fundamentals_df.drop(fundamentals_df.filter(regex='_y$').columns, axis=1, inplace=True)
+
+    fundamentals_df.drop(['period', 'reportedCurrency', 'reportedDate', 'report_type'], axis=1, inplace=True)
+    ml_df = fundamentals_df.drop('symbol', axis=1)
+
+    # need to add back the symbols' feature to the dataset for passing to the model
+    for symbol in feature_symbols:
+        if symbol != selected_symbol:
+            ml_df[symbol] = [False for _ in range(len(ml_df))]
+        else:
+            ml_df[symbol] = [True for _ in range(len(ml_df))]
+
+    ml_df['date'] = (ml_df['fiscalDateEnding'] - datetime(1970, 1, 1)).dt.total_seconds()
+    ml_df.drop(['fiscalDateEnding'], axis=1, inplace=True)
+    ml_df = ml_df[ml_df['date'] == ml_df['date'].max()]
+
+    prediction = stock_prediction_model.predict(ml_df)
+    buy = True if prediction[0] == 1 else False
+
+    st.markdown('##### Action to Take based on the fundamentals (Using Machine Learning Model)')
+    if owns_stock and buy:
+        st.markdown('###### Hold')
+    elif owns_stock and not buy:
+        st.markdown('###### Sell')
+    elif not owns_stock and buy:
+        st.markdown('###### Buy')
+    else:
+        st.markdown('###### No action')
+
+
 def app():
     st.title('Welcome to StockUp')
     st.subheader('Investment ideas backed by science and not guesses!')
-    results = stock_repo.find_all_sync(limit=1_000_000)
+    stock_details = stock_repo.find_all(limit=1_000_000)
     selected_company = st.selectbox('Please select one of the matching stock/etf to analyse',
-                                    [item['name'] for item in results])
-    selected_symbol = next(map(lambda x: x['symbol'], filter(lambda x: x['name'] == selected_company, results)))
+                                    [item['name'] for item in stock_details])
+    selected_symbol = next(map(lambda x: x['symbol'], filter(lambda x: x['name'] == selected_company, stock_details)))
+    own_stock = st.toggle('I own this stock')
 
     if selected_company:
-        balance_sheets = balance_sheet_repo.find_all_sync(selected_symbol)
-        balance_sheet_df = pd.DataFrame(balance_sheets)
+        balance_sheets = balance_sheet_repo.find_all(selected_symbol)
+        balance_sheet_df = pd.DataFrame(balance_sheets).dropna()
 
-        cash_flow = cash_flow_repo.find_all_sync(selected_symbol)
-        cash_flow_df = pd.DataFrame(cash_flow)
+        cash_flow = cash_flow_repo.find_all(selected_symbol)
+        cash_flow_df = pd.DataFrame(cash_flow).dropna()
 
-        income_statements = income_statement_repo.find_all_sync(selected_symbol)
-        income_statements_df = pd.DataFrame(income_statements)
+        income_statements = income_statement_repo.find_all(selected_symbol)
+        income_statements_df = pd.DataFrame(income_statements).dropna()
 
-        earnings = earnings_repo.find_all_sync(selected_symbol)
-        earnings_df = pd.DataFrame(earnings)
+        earnings = earnings_repo.find_all(selected_symbol)
+        earnings_df = pd.DataFrame(earnings).dropna()
 
         expert_tab, analysis_tab, fundamentals_tab, news_tab = st.tabs(
             ["💰 Expert Advisor", "📈 Data Analysis", "🗃 Fundamentals", "News"])
+
+        with expert_tab:
+            robo_advisor(own_stock, selected_symbol, balance_sheet_df, cash_flow_df, income_statements_df, earnings_df)
 
         with analysis_tab:
             data_analysis(balance_sheet_df, cash_flow_df, income_statements_df)
 
         with fundamentals_tab:
             fundamentals(balance_sheet_df, cash_flow_df, income_statements_df, earnings_df)
+
         with news_tab:
             news_listing(selected_symbol)
 
