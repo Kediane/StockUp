@@ -6,3 +6,7 @@ scipy
 notebook
 tomli
 finvizfinance
+matplotlib
+seaborn
+yfinance
+scikit-learn

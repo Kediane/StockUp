@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from sqlite3 import Connection
 
 from models.queries.balance_sheets import INSERT_BALANCE_SHEETS_TABLE, SELECT_BALANCE_SHEET, \
@@ -18,7 +19,7 @@ class BalanceSheetRepository:
         return [
             {
                 'symbol': record[0],
-                'fiscalDateEnding': record[1],
+                'fiscalDateEnding': datetime.strptime(record[1], '%Y-%m-%d'),
                 'reportedCurrency': record[2],
                 'totalAssets': record[3],
                 'totalCurrentAssets': record[4],

@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlite3 import Connection
 
 from models.queries.Income_statements import INSERT_INCOME_STATEMENTS_TABLE, SELECT_INCOME_STATEMENT, \
@@ -17,7 +18,7 @@ class IncomeStatementRepository:
         return [
             {
                 'symbol': record[0],
-                'fiscalDateEnding': record[1],
+                'fiscalDateEnding': datetime.strptime(record[1], '%Y-%m-%d'),
                 'reportedCurrency': record[2],
                 'grossProfit': record[3],
                 'totalRevenue': record[4],

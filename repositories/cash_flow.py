@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlite3 import Connection
 
 from models.queries.cash_flows import INSERT_CASH_FLOWS_TABLE, SELECT_CASH_FLOW_REPORT, \
@@ -17,7 +18,7 @@ class CashFlowRepository:
         return [
             {
                 'symbol': record[0],
-                'fiscalDateEnding': record[1],
+                'fiscalDateEnding': datetime.strptime(record[1], '%Y-%m-%d'),
                 'reportedCurrency': record[2],
                 'operatingCashflow': record[3],
                 'paymentsForOperatingActivities': record[4],
