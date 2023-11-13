@@ -35,7 +35,7 @@ class BatchService:
         self.earnings_repo = earnings_repo
         self.batch_size = batch_size
 
-    async def run(self):
+    def run(self):
         while True:
             self.LOGGER.info('Scheduling batch job')
             try:
